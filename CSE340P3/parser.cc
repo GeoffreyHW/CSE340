@@ -20,7 +20,19 @@ struct Valid{
     string name;
     int declared;
     int used;
+    Valid(string aName, int aDeclared, int aUsed){
+        name = aName;
+        declared = aDeclared;
+        used = aUsed;
+    }
+    Valid(){
+        name = "Default";
+        declared = 0;
+        used = 0;
+    }
 };
+
+vector<Valid> validTokens;
 
 struct Declaration{
     string name;
@@ -268,7 +280,9 @@ string Parser::parse_type_name()
             cout << "ERROR CODE 1.4 " << t.lexeme << endl;
             exit(1);
         }
-        return currentDec->typeName;;
+        Valid currentValid = Valid(t.lexeme, t.line_no, currentDec->line);
+        validTokens.push_back(currentValid);
+        return currentDec->typeName;
     }
     else{
         syntax_error();
@@ -376,9 +390,11 @@ void Parser::parse_assign_stmt()
         syntax_error();
     }
     
-    variableExists(t.lexeme);
+    variableExists(t.lexeme);   
     
     Declaration *currentDec = lookup(currentScope, t.lexeme);
+    Valid currentValid = Valid(t.lexeme, t.line_no, currentDec->line);
+    validTokens.push_back(currentValid);
     string mismatch = currentDec->typeName;
     
     expect(EQUAL);
@@ -469,6 +485,8 @@ void Parser::parse_condition()
         Token t = lexer.GetToken();
         variableExists(t.lexeme);
         Declaration* currentDec = lookup(currentScope, t.lexeme);
+        Valid currentValid = Valid(t.lexeme, t.line_no, currentDec->line);
+        validTokens.push_back(currentValid);
         Token t2 = peek();
         if(t2.token_type == GREATER || t2.token_type == GTEQ || t2.token_type == LESS || t2.token_type == NOTEQUAL || t2.token_type == LTEQ){
             parse_relop();
@@ -513,6 +531,8 @@ string Parser::parse_primary()
         Token t = lexer.GetToken();
         variableExists(t.lexeme);
         Declaration *currentDec = lookup(currentScope, t.lexeme);
+        Valid currentValid = Valid(t.lexeme, t.line_no, currentDec->line);
+        validTokens.push_back(currentValid);
         return currentDec->typeName;
     }
     else if(t.token_type == NUM){
@@ -530,7 +550,6 @@ string Parser::parse_primary()
 
 void Parser::parse_relop()
 {
-    // relop -> GREATER
     // relop -> GTEQ
     // relop -> LESS
     // relop -> NOTEQUAL
@@ -563,10 +582,18 @@ void Parser::ParseInput()
     expect(END_OF_FILE);
 }
 
+void PrintSemantics(){
+    for(vector <Valid> :: iterator i = validTokens.begin(); i != validTokens.end(); ++i){
+        cout << i->name << " " << i->declared << " " << i->used << endl;
+    }
+}
+
 int main()
 {
     Parser parser;
 
     parser.ParseInput();
+    
+    PrintSemantics();
 }
 

@@ -1,13 +1,10 @@
-{
+ {
     TYPE t : INT;
     VAR a, b : t;
     TYPE c : BOOLEAN;
     VAR d : BOOLEAN;
     { VAR a : INT;
     
-    VAR g : BOOLEAN;
-    
-    WHILE a { a = b; }
     
     TYPE MYSTRING : STRING;
     VAR str1 : MYSTRING;
@@ -47,4 +44,3 @@
         }
     }
 }
-

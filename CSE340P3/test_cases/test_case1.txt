@@ -1,0 +1,11 @@
+{
+    TYPE t : INT;
+    VAR a, b : t;
+    { VAR a : INT;
+        WHILE a > b
+        {
+        a = a + b;
+        }
+    }
+}
+

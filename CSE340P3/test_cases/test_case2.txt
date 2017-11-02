@@ -1,0 +1,86 @@
+{
+    TYPE x : INT;
+    VAR y : x;
+    VAR z : INT;
+    VAR p : STRING;
+    VAR o : BOOLEAN;
+    VAR i : REAL;
+    VAR k : LONG;
+    VAR m : ID;
+    {
+        VAR a : INT;
+    }
+    
+    {{
+        k = k * k;
+        z = z * z + z;
+        o = o * o + o;
+        i = i + i;
+        m = m + m;
+        p = p + p;
+        
+        TYPE MYBOOL : BOOLEAN;
+        VAR bool2 : MYBOOL;
+        o = bool2 + o;
+        bool2 = o + bool2;
+        
+        TYPE MYSTRING : STRING;
+        VAR string : MYSTRING;
+        string = string + p;
+        
+        TYPE MYLONG : LONG;
+        VAR alongnumber : MYLONG;
+        alongnumber = alongnumber + k;
+        
+        TYPE MYID : ID;
+        VAR myid2 : MYID;
+        myid2 = m + myid2;
+        
+        VAR MYID2 : MYID;
+        myid2 = MYID2 + myid2;
+    }}
+    VAR a : INT;
+    WHILE y <> 10
+    {
+        z = z * y + z;
+        a = a + a;
+    }
+    
+    WHILE y > 10
+    {
+        z = z + y * z;
+        a = a + a;
+    }
+    
+    WHILE y < 10
+    {
+        z = z + y + z;
+        a = a + a;
+    }
+    
+    WHILE y >= 10
+    {
+        z = z + y + z;
+        a = a + a;
+    }
+    
+    WHILE y <= 10
+    {
+        z = z + y + z;
+        a = a + a;
+    }
+    
+    {
+        VAR a : INT;
+        {
+            VAR b : INT;
+            a = a + b;
+            WHILE 5 <> 10
+            {
+                a = a + a + a + a + a;
+            }
+        }
+    }
+}
+
+

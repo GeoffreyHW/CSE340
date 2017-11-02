@@ -1,0 +1,46 @@
+{
+    TYPE t : INT;
+    VAR a, b : t;
+    TYPE c : BOOLEAN;
+    { VAR a : INT;
+    
+    TYPE MYSTRING : STRING;
+    VAR str1 : MYSTRING;
+    VAR str2 : STRING;
+    str1 = str2 + str2 * str1;
+    
+    TYPE MYBOOL : BOOLEAN;
+    VAR bool1 : MYBOOL;
+    VAR bool2 : BOOLEAN;
+    
+    str1 = bool2 * bool1 + bool2 + bool1;
+    
+    TYPE MYLONG : LONG;
+    VAR long1 : MYLONG;
+    VAR long2 : LONG;
+    long1 = long2 * long1 + long2;
+    
+    TYPE MYINT : INT;
+    VAR num1 : MYINT;
+    VAR num2 : INT;
+    num1 = num2 * num1 + num2;
+    
+    TYPE MYID : ID;
+    VAR id1 : MYID;
+    VAR id2 : ID;
+    id1 = id2 * id1 + id2;
+    
+    TYPE MYREALNUM : REAL;
+    VAR realnum1 : MYREALNUM;
+    VAR realnum2 : REAL;
+    realnum1 = realnum2 * realnum1 + realnum2;
+    
+    WHILE a > b
+        {
+        a = a + b;
+        a = a + b;
+        a = a + b;
+        }
+    }
+}
+

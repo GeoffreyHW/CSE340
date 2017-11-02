@@ -1,0 +1,36 @@
+{
+    VAR a : INT;
+    TYPE c : REAL;
+    {
+        TYPE a : INT;
+        VAR c, d : a;
+        VAR e : REAL;  
+        WHILE e <> 10.0 {
+            e = e + e;
+            c = d + c + d;
+        }
+        WHILE e <> e {
+
+            c = c + 10;
+            e = e + 10.0;
+        }
+    }  
+    VAR d : LONG;
+    a = a + a;
+    d = d + d;
+    {{
+        VAR a123b : INT;
+        a123b = a + a;
+        a123b = 0;
+        a123b = 12374812374;
+        VAR realnum123 : REAL;
+        realnum123 = 8.342;
+    }}    
+    a = a + a;
+}
+
+
+
+
+
+

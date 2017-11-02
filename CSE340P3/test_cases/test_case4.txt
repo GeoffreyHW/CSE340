@@ -2,18 +2,22 @@
     TYPE t : INT;
     VAR a, b : t;
     TYPE c : BOOLEAN;
+    VAR d : BOOLEAN;
     { VAR a : INT;
+    
+    VAR g : BOOLEAN;
+    
+    WHILE a { a = b; }
     
     TYPE MYSTRING : STRING;
     VAR str1 : MYSTRING;
     VAR str2 : STRING;
-    str1 = str2 + str2 * str1;
-    
+
     TYPE MYBOOL : BOOLEAN;
     VAR bool1 : MYBOOL;
     VAR bool2 : BOOLEAN;
     
-    str1 = bool2 * bool1 + bool2 + bool1;
+    bool1 = bool2 * bool1 + bool2 + bool1;
     
     TYPE MYLONG : LONG;
     VAR long1 : MYLONG;

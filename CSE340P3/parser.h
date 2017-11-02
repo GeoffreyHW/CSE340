@@ -29,11 +29,11 @@ class Parser {
     void parse_stmt();
     void parse_assign_stmt();
     void parse_while_stmt();
-    void parse_expr();
-    void parse_term();
-    void parse_factor();
+    std::string parse_expr();
+    std::string parse_term();
+    std::string parse_factor();
     void parse_condition();
-    void parse_primary();
+    std::string parse_primary();
     void parse_relop();
 
   public:

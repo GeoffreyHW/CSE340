@@ -10,6 +10,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <map>
+#include<cstring>
+#include<string>
 #include "parser.h"
 
 using namespace std;
@@ -229,14 +231,6 @@ string Parser::parse_type_name()
     // type_name -> ID
     Token t = peek();
   
-    if(currentScope->declarations[t.lexeme].type.compare("VAR") == 0){
-        cout << "ERROR CODE 2.3 " << t.lexeme << endl;
-        exit(1);
-    }
-    if(((currentScope->declarations).count(t.lexeme) == 0) && t.token_type != REAL && t.token_type != INT && t.token_type != BOOLEAN && t.token_type != STRING && t.token_type != LONG){
-        cout << "ERROR CODE 1.4 " << t.lexeme << endl;
-        exit(1);
-    }
     if (t.token_type == REAL) {
         Token t = lexer.GetToken();
         return "REAL";
@@ -257,12 +251,26 @@ string Parser::parse_type_name()
         Token t = lexer.GetToken();
         return "LONG";
     }
-    else if (t.token_type == ID) {
+    else if(t.token_type == ID && t.lexeme == "ID"){
         Token t = lexer.GetToken();
         return "ID";
     }
+    else if (t.token_type == ID) {
+        Token t = lexer.GetToken();
+        Declaration *currentDec = lookup(currentScope, t.lexeme);
+        if(currentDec != NULL){
+            if(currentDec->type.compare("VAR") == 0){
+                cout << "ERROR CODE 2.3 " << t.lexeme <<  endl;
+                exit(1);
+            }
+        }
+        else{
+            cout << "ERROR CODE 1.4 " << t.lexeme << endl;
+            exit(1);
+        }
+        return currentDec->typeName;;
+    }
     else{
-
         syntax_error();
     }
 }
@@ -362,7 +370,7 @@ void Parser::parse_stmt()
 void Parser::parse_assign_stmt()
 {
     // assign_stmt -> ID EQUAL expr SEMICOLON
-
+    
     Token t = lexer.GetToken();
     if (t.token_type != ID){
         syntax_error();
@@ -370,8 +378,15 @@ void Parser::parse_assign_stmt()
     
     variableExists(t.lexeme);
     
+    Declaration *currentDec = lookup(currentScope, t.lexeme);
+    string mismatch = currentDec->typeName;
+    
     expect(EQUAL);
-    parse_expr();
+    string mismatch2 = parse_expr();
+    if(mismatch.compare(mismatch2) != 0){
+        cout << "TYPE MISMATCH " << t.line_no << " C1" << endl;
+        exit(1);
+    }
     expect(SEMICOLON);
 }
 
@@ -386,33 +401,43 @@ void Parser::parse_while_stmt()
     expect(RBRACE);
 }
 
-void Parser::parse_expr()
+string Parser::parse_expr()
 {
     // expr -> term 
     // expr -> term + expr
 
-    parse_term();
+    string mismatch = parse_term();
     Token t = peek();
     if(t.token_type == PLUS){
         Token t = lexer.GetToken();
-        parse_expr();
+        string mismatch2 = parse_expr();
+        if(mismatch.compare(mismatch2) != 0){
+            cout << "TYPE MISMATCH " << t.line_no << " C2" << endl;
+            exit(1);
+        }
     }
+    return mismatch;
 }
 
-void Parser::parse_term()
+string Parser::parse_term()
 {
     // term -> factor
     // term -> factor MULT term
 
-    parse_factor();
+    string mismatch = parse_factor();
     Token t = peek();
     if(t.token_type == MULT){
         Token t = lexer.GetToken();
-        parse_term();
+        string mismatch2 = parse_term();
+        if(mismatch.compare(mismatch2) != 0){
+            cout << "TYPE MISMATCH " << t.line_no << " C2" << endl;
+            exit(1);
+        }
     }
+    return mismatch;
 }
 
-void Parser::parse_factor()
+string Parser::parse_factor()
 {
     // factor -> LPAREN expr RPAREN
     // factor -> NUM
@@ -422,18 +447,12 @@ void Parser::parse_factor()
     Token t = peek();
     if(t.token_type == LPAREN){
         Token t = lexer.GetToken();
-        parse_expr();
+        string mismatch = parse_expr();
         expect(RPAREN);
+        return mismatch;
     }
-    else if(t.token_type == NUM){
-        Token t = lexer.GetToken();
-    }
-    else if(t.token_type == REALNUM){
-        Token t = lexer.GetToken();
-    }
-    else if(t.token_type == ID){
-        Token t = lexer.GetToken();
-        variableExists(t.lexeme);
+    else if(t.token_type == NUM || t.token_type == REALNUM || t.token_type == ID){
+        return parse_primary();
     }
     else{
         syntax_error();
@@ -449,23 +468,42 @@ void Parser::parse_condition()
     if(t.token_type == ID){
         Token t = lexer.GetToken();
         variableExists(t.lexeme);
+        Declaration* currentDec = lookup(currentScope, t.lexeme);
         Token t2 = peek();
         if(t2.token_type == GREATER || t2.token_type == GTEQ || t2.token_type == LESS || t2.token_type == NOTEQUAL || t2.token_type == LTEQ){
             parse_relop();
-            parse_primary();
+            string mismatch = parse_primary();
+            if(currentDec->typeName.compare(mismatch) != 0){
+                cout << "TYPE MISMATCH " << t.line_no << " C3" << endl;
+                exit(1);
+            }
+        }
+        else{
+            if(t2.token_type != LBRACE){
+                syntax_error();
+            }
+            if(currentDec->typeName.compare("BOOLEAN") != 0) {
+                cout << "TYPE MISMATCH " << t.line_no << " C4" << endl;
+                exit(1);
+            }
+            
         }
     }
     else if(t.token_type == NUM || t.token_type == REALNUM){
-        parse_primary();
+        string mismatch = parse_primary();
         parse_relop();
-        parse_primary();
+        string mismatch2 = parse_primary();
+        if(mismatch.compare(mismatch2) != 0){
+            cout << "TYPE MISMATCH " << t.line_no << " C3" << endl;
+            exit(1);
+        }
     }
     else{
         syntax_error();
     }
 }
 
-void Parser::parse_primary()
+string Parser::parse_primary()
 {
     // primary -> ID
     // primary -> NUM
@@ -474,12 +512,16 @@ void Parser::parse_primary()
     if(t.token_type == ID){
         Token t = lexer.GetToken();
         variableExists(t.lexeme);
+        Declaration *currentDec = lookup(currentScope, t.lexeme);
+        return currentDec->typeName;
     }
     else if(t.token_type == NUM){
         Token t = lexer.GetToken();
+        return "INT";
     }
     else if(t.token_type == REALNUM){
         Token t = lexer.GetToken();
+        return "REAL";
     }
     else{
         syntax_error();

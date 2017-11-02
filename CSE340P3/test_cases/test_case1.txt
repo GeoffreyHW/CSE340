@@ -1,8 +1,11 @@
 {
     TYPE t : INT;
     VAR a, b : t;
+    TYPE e : BOOLEAN;
+    VAR d : e;
+    
     { VAR a : INT;
-        WHILE a > b
+        WHILE d
         {
         a = a + b;
         }

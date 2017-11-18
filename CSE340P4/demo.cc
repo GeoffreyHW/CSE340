@@ -5,8 +5,309 @@
 #include <string.h>
 #include "compiler.h"
 
-struct StatementNode * parse_generate_intermediate_representation()
+void Parser::syntax_error()
 {
+    cout << "Syntax Error\n";
+    exit(1);
+}
+
+// this function gets a token and checks if it is
+// of the expected type. If it is, the token is
+// returned, otherwise, syntax_error() is generated
+// this function is particularly useful to match
+// terminals in a right hand side of a rule.
+// Written by Mohsen Zohrevandi
+Token Parser::expect(TokenType expected_type)
+{
+    Token t = lexer.GetToken();
+    if (t.token_type != expected_type)
+        syntax_error();
+    return t;
+}
+
+// this function simply checks the next token without
+// consuming the input
+// Written by Mohsen Zohrevandi
+Token Parser::peek()
+{
+    Token t = lexer.GetToken();
+    lexer.UngetToken(t);
+    return t;
+}
+
+// Parsing
+
+void Parser::parse_program()
+{
+    //program -> var_section
+    parse_var_section();
+    // program -> body    
+    parse_body();
+}
+
+void Parser:: parse_var_section(){
+    parse_id_list();
+    expect(SEMICOLON);
+}
+
+vector<Token> Parser::parse_id_list()
+{
+    vector<Token> ids = vector<Token>();
+    // id_list -> ID
+    // id_list -> ID COMMA id_list
+
+    Token id = expect(ID);
+    ids.push_back(id);
+   
+    Token t = peek();
+    if(t.token_type == COMMA){
+        Token t = lexer.GetToken();
+        vector<Token> other_ids = parse_id_list();
+        for (std::vector<Token>::iterator id = other_ids.begin(); id != other_ids.end(); ++id) {
+            ids.push_back(*id);
+        }
+        return ids;
+    }  
+    else if(t.token_type == SEMICOLON){
+        return ids;
+    }
+    else{
+        syntax_error();
+    }
+}
+
+void Parser::parse_body()
+{   
+    expect(LBRACE);
+    parse_stmt_list();
+    expect(RBRACE);
+}
+
+void Parser::parse_stmt_list()
+{
+    // stmt_list -> stmt
+    // stmt_list -> stmt stmt_list
+    
+    parse_stmt();
+    Token t = peek();
+    if (t.token_type == WHILE || t.token_type == ID || t.token_type == print || t.token_type == IF || t.token_type == SWITCH)
+    {
+        // stmt_list -> stmt stmt_list
+        parse_stmt_list();
+    }
+    else if (t.token_type == RBRACE)
+    {
+        // stmt_list -> stmt
+    }
+    else
+    {
+        syntax_error();
+    }
+}
+
+void Parser::parse_stmt()
+{
+    // stmt -> assign_stmt
+    // stmt -> print_stmt
+    // stmt -> while_stmt
+    // stmt -> if_stmt
+    // stmt -> switch_stmt
+ 
+    Token t = peek();
+    if(t.token_type == ID){
+        parse_assign_stmt();
+    }
+    else if(t.token_type == print){
+        parse_print_stmt();
+    }
+    else if(t.token_type == WHILE){
+       parse_while_stmt();
+    }
+    else if(t.token_type == IF){
+        parse_if_stmt();
+    }
+    else if(t.token_type == SWITCH){
+        parse_switch_stmt();
+    }
+    else{
+        syntax_error();
+    }
+    
+}
+
+void Parser::parse_assign_stmt()
+{
+    // assign_stmt -> ID EQUAL expr SEMICOLON
+    
+    Token t = lexer.GetToken();
+    if (t.token_type != ID){
+        syntax_error();
+    }
+    expect(EQUAL);
+    parse_primary();
+    Token t = peek();
+    if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || t.token_type == DIV){
+        parse_op();
+        parse_primary();
+    }
+    expect(SEMICOLON);
+}
+
+void Parser::parse_print_stmt(){
+    expect(print);
+    expect(ID);
+    expect(SEMICOLON);
+}
+
+void Parser::parse_while_stmt()
+{
+   // while_stmt -> WHILE condition LBRACE stmt list RBRACE
+
+    expect(WHILE);
+    parse_condition();
+    parse_body();
+}
+
+void Parser::parse_if_stmt(){
+    expect(IF);
+    parse_condition();
+    parse_body();
+}
+
+void Parser::parse_switch_stmt(){
+    expect(SWITCH);
+    expect(ID);
+    expect(LBRACE);
+    parse_case_list();
+    Token t = peek();
+    if(t.token_type == DEFAULT){
+        parse_default_case();
+    }
+    expect(RBRACE);
+
+void Parser::parse_expr()
+{
+    // expr -> primary op primary
+
+    parse_primary();
+    parse_op();
+    parse_primary();
+}
+
+void Parser:: parse_op(){
+    // op -> PLUS
+    // op -> MINUS
+    // op -> MULT
+    // op -> DIV
+
+    Token t = peek();
+    if(t.token_type == PLUS){
+        Token t = lexer.GetToken();
+    }
+    else if(t.token_type == MINUS){
+        Token t = lexer.GetToken();
+    }
+    else if(t.token_type == MULT){
+        Token t = lexer.GetToken();
+    }
+    else if(t.token_type == DIV){
+        Token t = lexer.GetToken();
+    }
+    else{
+        syntax_error();
+    }
+}
+
+void Parser::parse_condition()
+{
+    // condition -> primary relop primary
+
+    parse_primary();
+    parse_relop();
+    parse_primary();
+}
+
+string Parser::parse_primary()
+{
+    // primary -> ID
+    // primary -> NUM
+    Token t = peek();
+    if(t.token_type == ID){
+        Token t = lexer.GetToken();
+        return t.lexeme;
+    }
+    else if(t.token_type == NUM){
+        Token t = lexer.GetToken();
+        return "INT";
+    }
+    else{
+        syntax_error();
+    }
+}
+
+void Parser::parse_relop()
+{
+    // relop -> GREATER
+    // relop -> LESS
+    // relop -> NOTEQUAL
+
+    Token t = peek();
+    if(t.token_type == GREATER){
+        Token t = lexer.GetToken();
+    }
+    else if(t.token_type == LESS){
+        Token t = lexer.GetToken();
+    }
+    else if(t.token_type == NOTEQUAL){
+        Token t = lexer.GetToken();
+    }
+    else{
+        syntax_error();
+    }
+}
+
+void Parser::parse_for_stmt(){
+    expect(FOR);
+    expect(LPAREN);
+    parse_assign_stmt();
+    parse_condition();
+    expect(SEMICOLON);
+    parse_assign_stmt();
+    expect(RPAREN);
+    parse_body();
+}
+
+void Parser::parse_case_list(){
+    parse_case();
+    Token t = peek();
+    if(t.token_type == CASE){
+        parse_case_list();
+    }
+}
+
+void Parser::parse_case(){
+    expect(CASE);
+    expect(NUM);
+    expect(COLON);
+    parse_body();
+}
+
+void Parser::parse_default_case(){
+    expect(DEFAULT);
+    expect(COLON);
+    parse_body();
+}
+
+void Parser::ParseInput()
+{
+    parse_program();
+    expect(END_OF_FILE);
+}
+struct StatementNode * parse_generate_intermediate_representation()
+{   
+    Parser parser;
+    StatementNode* s1 = parser.ParseInput();
+    return s1;
     // Sample program for demonstration purpose only
     // Replace the following with a parser that reads the program from stdin &
     // creates appropriate data structures to be executed by execute_program()
@@ -23,7 +324,7 @@ struct StatementNode * parse_generate_intermediate_representation()
     //    print b;
     // }
 
-    struct ValueNode * A = new ValueNode;
+    /*struct ValueNode * A = new ValueNode;
     struct ValueNode * B = new ValueNode;
     struct ValueNode * ONE = new ValueNode;
     struct ValueNode * TEN = new ValueNode;
@@ -96,6 +397,5 @@ struct StatementNode * parse_generate_intermediate_representation()
     s8->print_stmt = new PrintStatement;
     s8->print_stmt->id = B;
     s8->next = NULL;
-
-    return s1;
+*/
 }

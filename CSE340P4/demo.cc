@@ -79,6 +79,7 @@ vector<Token> Parser::parse_id_list()
 void Parser::parse_body()
 {   
     expect(LBRACE);
+    StatementNode * s1 = new StatementNode;
     parse_stmt_list();
     expect(RBRACE);
 }
@@ -135,22 +136,34 @@ void Parser::parse_stmt()
     
 }
 
-void Parser::parse_assign_stmt()
+StatementNode Parser::parse_assign_stmt()
 {
     // assign_stmt -> ID EQUAL expr SEMICOLON
-    
+    StatementNode * s1 = new StatementNode;
+    s1->assign_stmt = new AssignmentStatement;
+    ValueNode * A = new ValueNode;
     Token t = lexer.GetToken();
     if (t.token_type != ID){
         syntax_error();
     }
+    A->name = t.lexeme;
+    s1->assign_stmt->left_hand_side = A;
     expect(EQUAL);
-    parse_primary();
+    ValueNode *op1 = parse_primary();
+    s1->assign_stmt->operand1 = op1;
     Token t = peek();
     if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || t.token_type == DIV){
-        parse_op();
-        parse_primary();
+        ArithemeticOperatorType op = parse_op();
+        s1->assign_stmt->op = op;
+        ValueNode *op2 = parse_primary();
+        s1->assign_stmt->operand2 = op2;
+    }
+    else{
+        s1->assign_stmt->op = OPERATOR_NONE;
+        s1->assign_stmt->operand2 = NULL;
     }
     expect(SEMICOLON);
+    return s1;
 }
 
 void Parser::parse_print_stmt(){
@@ -194,28 +207,34 @@ void Parser::parse_expr()
     parse_primary();
 }
 
-void Parser:: parse_op(){
+ArithmeticOperatorType Parser:: parse_op(){
     // op -> PLUS
     // op -> MINUS
     // op -> MULT
     // op -> DIV
 
+    ArithemticOperatorType op = new ArithmeticOperatorType;
     Token t = peek();
     if(t.token_type == PLUS){
         Token t = lexer.GetToken();
+        op = OPERATOR_PLUS;
     }
     else if(t.token_type == MINUS){
         Token t = lexer.GetToken();
+        op = OPERATOR_MINUS;
     }
     else if(t.token_type == MULT){
         Token t = lexer.GetToken();
+        op = OPERATOR_MULT;
     }
     else if(t.token_type == DIV){
         Token t = lexer.GetToken();
+        op = OPERATOR_DIV;
     }
     else{
         syntax_error();
     }
+    return op;
 }
 
 void Parser::parse_condition()
@@ -227,22 +246,24 @@ void Parser::parse_condition()
     parse_primary();
 }
 
-string Parser::parse_primary()
+ValueNode Parser::parse_primary()
 {
     // primary -> ID
     // primary -> NUM
+    ValueNode *A = new ValueNode;
     Token t = peek();
     if(t.token_type == ID){
         Token t = lexer.GetToken();
-        return t.lexeme;
+        A->name = t.lexeme;
     }
     else if(t.token_type == NUM){
         Token t = lexer.GetToken();
-        return "INT";
+        A->name = "INT";
     }
     else{
         syntax_error();
     }
+    return A;
 }
 
 void Parser::parse_relop()
@@ -306,7 +327,7 @@ void Parser::ParseInput()
 struct StatementNode * parse_generate_intermediate_representation()
 {   
     Parser parser;
-    StatementNode* s1 = parser.ParseInput();
+    s1 = parser.ParseInput();
     return s1;
     // Sample program for demonstration purpose only
     // Replace the following with a parser that reads the program from stdin &

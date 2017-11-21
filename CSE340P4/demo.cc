@@ -4,6 +4,8 @@
 #include <ctype.h>
 #include <string.h>
 #include "compiler.h"
+    
+map<string, ValueNode> nodeMap;
 
 void Parser::syntax_error()
 {
@@ -35,6 +37,31 @@ Token Parser::peek()
     return t;
 }
 
+
+ValueNode* Parser:: get_value_node(Token tok){
+    if(nodeMap.find(tok) != nodeMap.end(){
+        return nodeMap[tok.lexeme];
+    }
+    else{
+        int num = stoi(tok.lexeme);
+        ValueNode* numNode = new ValueNode();
+        numNode->value = num;
+        return numNode;
+    }
+}
+
+void Parser::append_to_end(StatementNode *body, StatementNode *node){
+    StatementNode *it = body;
+    if(it == NULL){
+        syntax_error();
+    }
+    while(it->next != NULL){
+        it = it->next;
+    }
+    
+    it->next= node;
+}
+    
 // Parsing
 
 void Parser::parse_program()
@@ -46,16 +73,22 @@ void Parser::parse_program()
 }
 
 void Parser:: parse_var_section(){
-    parse_id_list();
+    vector<Token> tokens = parse_id_list();
+    for(vector<Token>::iterator it = tokens.begin(); it != tokens.end(); it++){
+        ValueNode* vn = new ValueNode;
+        vn->name = it->lexeme;
+        vn->value = 0;
+        NodeMap[it->lexeme] = vn;
+    }
     expect(SEMICOLON);
 }
 
 vector<Token> Parser::parse_id_list()
 {
-    vector<Token> ids = vector<Token>();
     // id_list -> ID
     // id_list -> ID COMMA id_list
 
+    vector<Token> ids;
     Token id = expect(ID);
     ids.push_back(id);
    
@@ -76,29 +109,44 @@ vector<Token> Parser::parse_id_list()
     }
 }
 
-void Parser::parse_body()
+StatementNode* Parser::parse_body()
 {   
+    StatementNode *stl;
+    
     expect(LBRACE);
-    StatementNode * s1 = new StatementNode;
-    parse_stmt_list();
+    stl = parse_stmt_list();
     expect(RBRACE);
+    
+    return stl;
 }
 
-void Parser::parse_stmt_list()
+StatementNode* Parser::parse_stmt_list()
 {
     // stmt_list -> stmt
     // stmt_list -> stmt stmt_list
     
-    parse_stmt();
+    StatementNode *st;
+    StatementNode *stl;
+    
+    st = parse_stmt();
     Token t = peek();
     if (t.token_type == WHILE || t.token_type == ID || t.token_type == print || t.token_type == IF || t.token_type == SWITCH)
     {
         // stmt_list -> stmt stmt_list
-        parse_stmt_list();
+        if(st->type == IF_STMT){
+            stl = parse_stmt_list();
+            append_to_end(st, stl);
+        }
+        else{
+            stl = parse_stmt_list();
+            append_to_end(st, stl);
+        }
+        return st;
     }
     else if (t.token_type == RBRACE)
     {
         // stmt_list -> stmt
+        return st;
     }
     else
     {
@@ -106,7 +154,7 @@ void Parser::parse_stmt_list()
     }
 }
 
-void Parser::parse_stmt()
+StatementNode* Parser::parse_stmt()
 {
     // stmt -> assign_stmt
     // stmt -> print_stmt
@@ -116,47 +164,48 @@ void Parser::parse_stmt()
  
     Token t = peek();
     if(t.token_type == ID){
-        parse_assign_stmt();
+        return parse_assign_stmt();
     }
     else if(t.token_type == print){
-        parse_print_stmt();
+        return parse_print_stmt();
     }
     else if(t.token_type == WHILE){
-       parse_while_stmt();
+       return parse_while_stmt();
     }
     else if(t.token_type == IF){
-        parse_if_stmt();
+        return parse_if_stmt();
     }
     else if(t.token_type == SWITCH){
-        parse_switch_stmt();
+        return parse_switch_stmt();
     }
     else{
         syntax_error();
     }
-    
 }
 
-StatementNode Parser::parse_assign_stmt()
+StatementNode* Parser::parse_assign_stmt()
 {
     // assign_stmt -> ID EQUAL expr SEMICOLON
     StatementNode * s1 = new StatementNode;
+    s1->type ASSIGN_STMT;
     s1->assign_stmt = new AssignmentStatement;
-    ValueNode * A = new ValueNode;
+    
     Token t = lexer.GetToken();
     if (t.token_type != ID){
         syntax_error();
     }
-    A->name = t.lexeme;
-    s1->assign_stmt->left_hand_side = A;
+
+    s1->assign_stmt->left_hand_side = get_value_node(t);
+    
     expect(EQUAL);
-    ValueNode *op1 = parse_primary();
-    s1->assign_stmt->operand1 = op1;
+    Token op1 = parse_primary();
+    s1->assign_stmt->operand1 = get_value_node(op1);
     Token t = peek();
     if(t.token_type == PLUS || t.token_type == MINUS || t.token_type == MULT || t.token_type == DIV){
-        ArithemeticOperatorType op = parse_op();
+        ArithmeticOperatorType op = parse_op();
         s1->assign_stmt->op = op;
-        ValueNode *op2 = parse_primary();
-        s1->assign_stmt->operand2 = op2;
+        Token op2 = parse_primary();
+        s1->assign_stmt->operand2 = get_value_node(op2);
     }
     else{
         s1->assign_stmt->op = OPERATOR_NONE;
@@ -166,25 +215,58 @@ StatementNode Parser::parse_assign_stmt()
     return s1;
 }
 
-void Parser::parse_print_stmt(){
-    expect(print);
-    expect(ID);
+StatementNode* Parser::parse_print_stmt(){
+    StatementNode * s2 = new StatementNode;
+    s2->type = PRINT_STMT;
+    s2->print_stmt = new PrintStatement;
+    
+    expect(PRINT);    
+    Token t = expect(ID);
     expect(SEMICOLON);
+    s2->print_stmt->id = get_value_node(t);
+    
+    return s2;
 }
 
-void Parser::parse_while_stmt()
+StatementNode* Parser::parse_while_stmt()
 {
    // while_stmt -> WHILE condition LBRACE stmt list RBRACE
-
     expect(WHILE);
-    parse_condition();
-    parse_body();
+    StatementNode *s3 = parse_condition();
+    
+    s3->type = IF_STMT;
+    s3->if_stmt = new IfStatement;
+    
+    StatementNode *whileBody = parse_body();
+    s3->if_stmt->true_branch = whileBody;
+    
+    StatementNode *gt = new StatementNode;
+    gt->type = GOTO_STMT;
+    gt->goto_stmt = new GotoStatement;
+    gt->goto_stmt->target = s3;
+    append_to_end(s3, gt);
+    
+    StatementNode* noopWhile = new StatementNode;
+    noopWhile->type = NOOP_STMT;
+    
+    s3->if_stmt->false_branch = noopWhile;   
+    s3->next = noopWhile;
 }
 
-void Parser::parse_if_stmt(){
+StatementNode* Parser::parse_if_stmt(){ 
     expect(IF);
-    parse_condition();
-    parse_body();
+    StatementNode *s4 = parse_condition();
+    StatementNode * body_node = parse_body();
+    s4->if_stmt->true_branch = body_node;
+    
+    StatementNode* noop = new StatementNode;
+    noop->type = NOOP_STMT;
+    
+    body_node->next = noop;   
+    append_to_end(body_node, noop);
+    s4->next = noop;
+    
+    return s4;
 }
 
 void Parser::parse_switch_stmt(){
@@ -197,6 +279,7 @@ void Parser::parse_switch_stmt(){
         parse_default_case();
     }
     expect(RBRACE);
+}
 
 void Parser::parse_expr()
 {
@@ -237,54 +320,67 @@ ArithmeticOperatorType Parser:: parse_op(){
     return op;
 }
 
-void Parser::parse_condition()
+StatementNode* Parser::parse_condition()
 {
     // condition -> primary relop primary
+    StatementNode *cond = new StatementNode;
+    cond->type = IF_STMT;
+    cond->if_stmt = new IfStatement;
 
-    parse_primary();
-    parse_relop();
-    parse_primary();
+    Token op1 = parse_primary();
+    cond->if_stmt->condition_operand1 = get_value_node(op1);
+    ConditionalOperatorType rel = parse_relop();
+    cond->if_stmt->condition_op = rel;
+    Token op2 = parse_primary();
+    cond->if_stmt->condition_operand2 = get_value_node(op2);
+    
+    return cond;
 }
 
-ValueNode Parser::parse_primary()
+Token Parser::parse_primary()
 {
     // primary -> ID
     // primary -> NUM
-    ValueNode *A = new ValueNode;
     Token t = peek();
     if(t.token_type == ID){
         Token t = lexer.GetToken();
-        A->name = t.lexeme;
+        return t;
     }
     else if(t.token_type == NUM){
         Token t = lexer.GetToken();
-        A->name = "INT";
+        return t;
     }
     else{
         syntax_error();
     }
-    return A;
 }
 
-void Parser::parse_relop()
+ConditionalOperatorType Parser::parse_relop()
 {
     // relop -> GREATER
     // relop -> LESS
     // relop -> NOTEQUAL
+    
+    ConditionalOperatorType cop = new ConditionalOperatorType;
 
     Token t = peek();
     if(t.token_type == GREATER){
         Token t = lexer.GetToken();
+        cop = CONDITION_GREATER;
     }
     else if(t.token_type == LESS){
         Token t = lexer.GetToken();
+        cop = CONDITION_LESS:
     }
     else if(t.token_type == NOTEQUAL){
         Token t = lexer.GetToken();
+        cop = CONDITION_NOTEQUAL;
     }
     else{
         syntax_error();
     }
+    
+    return cop;
 }
 
 void Parser::parse_for_stmt(){
@@ -324,6 +420,7 @@ void Parser::ParseInput()
     parse_program();
     expect(END_OF_FILE);
 }
+
 struct StatementNode * parse_generate_intermediate_representation()
 {   
     Parser parser;

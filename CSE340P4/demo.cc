@@ -135,7 +135,7 @@ StatementNode* Parser::parse_stmt_list()
     
     st = parse_stmt();
     Token t = peek();
-    if (t.token_type == WHILE || t.token_type == ID || t.token_type == PRINT || t.token_type == IF || t.token_type == SWITCH)
+    if (t.token_type == WHILE || t.token_type == ID || t.token_type == PRINT || t.token_type == IF || t.lexeme == "FOR" || t.token_type == SWITCH)
     {
         // stmt_list -> stmt stmt_list
 
@@ -172,7 +172,7 @@ StatementNode* Parser::parse_stmt()
     // stmt -> switch_stmt
  
     Token t = peek();
-    if(t.token_type == ID){
+    if(t.token_type == ID && t.lexeme != "FOR"){
         return parse_assign_stmt();
     }
     else if(t.token_type == PRINT){
@@ -183,6 +183,9 @@ StatementNode* Parser::parse_stmt()
     }
     else if(t.token_type == IF){
         return parse_if_stmt();
+    }
+    else if(t.lexeme == "FOR"){
+        return parse_for_stmt();
     }
     else if(t.token_type == SWITCH){
         return parse_switch_stmt();
@@ -264,8 +267,9 @@ StatementNode* Parser::parse_while_stmt()
 
 StatementNode* Parser::parse_for_stmt(){
     Token t = lexer.GetToken();
-    if (t.lexeme != "FOR")
+    if (t.lexeme != "FOR"){
         syntax_error();
+    }
     expect(LPAREN);
     
     StatementNode *forAssign = parse_assign_stmt();

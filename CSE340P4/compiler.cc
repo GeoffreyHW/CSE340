@@ -10,7 +10,6 @@
 #include <cstring>
 #include "compiler.h"
 #include "ir_debug.h"
-#include "demo.cc"
 
 #define DEBUG 1     // 1 => Turn ON debugging, 0 => Turn OFF debugging
 

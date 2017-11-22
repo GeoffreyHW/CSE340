@@ -11,7 +11,7 @@
 #include "compiler.h"
 #include "ir_debug.h"
 
-#define DEBUG 1     // 1 => Turn ON debugging, 0 => Turn OFF debugging
+#define DEBUG 0    // 1 => Turn ON debugging, 0 => Turn OFF debugging
 
 void debug(const char* format, ...)
 {

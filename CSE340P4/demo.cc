@@ -24,7 +24,6 @@ void Parser::syntax_error()
 // returned, otherwise, syntax_error() is generated
 // this function is particularly useful to match
 // terminals in a right hand side of a rule.
-// Written by Mohsen Zohrevandi
 Token Parser::expect(TokenType expected_type)
 {
     Token t = lexer.GetToken();
@@ -35,7 +34,6 @@ Token Parser::expect(TokenType expected_type)
 
 // this function simply checks the next token without
 // consuming the input
-// Written by Mohsen Zohrevandi
 Token Parser::peek()
 {
     Token t = lexer.GetToken();
@@ -131,7 +129,7 @@ StatementNode* Parser::parse_stmt_list()
 {
     // stmt_list -> stmt
     // stmt_list -> stmt stmt_list
-    
+    Token tok = peek();
     StatementNode *st;
     StatementNode *stl;
     
@@ -142,7 +140,15 @@ StatementNode* Parser::parse_stmt_list()
         // stmt_list -> stmt stmt_list
 
         stl = parse_stmt_list();
-        append_to_end(st, stl);
+        if(tok.lexeme == "FOR"){
+            st->next->next->next = stl;
+        }
+        else if(tok.token_type == WHILE || tok.token_type == IF){
+            st->next->next = stl;
+        }
+        else{            
+            st->next = stl;
+        }
 
         return st;
     }
@@ -244,13 +250,16 @@ StatementNode* Parser::parse_while_stmt()
     gt->type = GOTO_STMT;
     gt->goto_stmt = new GotoStatement;
     gt->goto_stmt->target = s3;
-    append_to_end(s3, gt);
+    append_to_end(whileBody, gt);
     
     StatementNode* noopWhile = new StatementNode;
     noopWhile->type = NOOP_STMT;
     
     s3->if_stmt->false_branch = noopWhile;   
     s3->next = noopWhile;
+    gt->next = noopWhile;
+    
+    return s3;
 }
 
 StatementNode* Parser::parse_for_stmt(){
@@ -268,12 +277,6 @@ StatementNode* Parser::parse_for_stmt(){
     noopFor->type = NOOP_STMT;   
     s5->next = noopFor;
     
-    StatementNode *gt2 = new StatementNode;
-    gt2->type = GOTO_STMT;
-    gt2->goto_stmt = new GotoStatement;
-    gt2->goto_stmt->target = s5;
-    append_to_end(s5, gt2);
-    
     expect(SEMICOLON);
     
     StatementNode *s6 = parse_assign_stmt();
@@ -283,9 +286,17 @@ StatementNode* Parser::parse_for_stmt(){
     StatementNode *forBody = parse_body();
     append_to_end(forBody, s6);
     
+        
+    StatementNode *gt2 = new StatementNode;
+    gt2->type = GOTO_STMT;
+    gt2->goto_stmt = new GotoStatement;
+    gt2->goto_stmt->target = s5;
+    append_to_end(forBody, gt2);
+    
     s5->if_stmt->true_branch = forBody;
     s5->if_stmt->false_branch = noopFor;   
     s5->next = noopFor;
+    gt2->next = noopFor;
     
     return forAssign;
 }
@@ -299,34 +310,12 @@ StatementNode* Parser::parse_if_stmt(){
     StatementNode* noop = new StatementNode;
     noop->type = NOOP_STMT;
     
-    body_node->next = noop;   
+    s4->if_stmt->false_branch = noop;
     append_to_end(body_node, noop);
     s4->next = noop;
     
     return s4;
 }
-
-StatementNode* Parser::parse_switch_stmt(){
-    expect(SWITCH);
-    expect(ID);
-    expect(LBRACE);
-    parse_case_list();
-    Token t = peek();
-    if(t.token_type == DEFAULT){
-        parse_default_case();
-    }
-    expect(RBRACE);
-}
-
-void Parser::parse_expr()
-{
-    // expr -> primary op primary
-
-    parse_primary();
-    parse_op();
-    parse_primary();
-}
-
 ArithmeticOperatorType Parser:: parse_op(){
     // op -> PLUS
     // op -> MINUS
@@ -384,6 +373,7 @@ ConditionalOperatorType Parser::parse_relop()
     
     return cop;
 }
+
 StatementNode* Parser::parse_condition()
 {
     // condition -> primary relop primary
@@ -419,19 +409,39 @@ Token Parser::parse_primary()
     }
 }
 
-void Parser::parse_case_list(){
-    parse_case();
+StatementNode* Parser::parse_switch_stmt(){
+    expect(SWITCH);
+    Token case_var = expect(ID);
+    expect(LBRACE);
+    parse_case_list(case_var);
+    Token t = peek();
+    if(t.token_type == DEFAULT){
+        parse_default_case();
+    }
+    expect(RBRACE);
+}
+
+void Parser::parse_case_list(Token case_var){
+    parse_case(case_var);
     Token t = peek();
     if(t.token_type == CASE){
-        parse_case_list();
+        parse_case_list(t);      
     }
 }
 
-void Parser::parse_case(){
+void Parser::parse_case(Token case_var){
     expect(CASE);
-    expect(NUM);
+    Token case_num = expect(NUM);
     expect(COLON);
-    parse_body();
+    if(case_var.lexeme == case_num.lexeme){
+        parse_body();
+         
+        StatementNode *gt3 = new StatementNode;
+        gt3->type = GOTO_STMT;
+        gt3->goto_stmt = new GotoStatement;
+        //gt3->goto_stmt->target = s5;
+        //append_to_end(s5, gt3);
+    }
 }
 
 void Parser::parse_default_case(){
@@ -443,7 +453,7 @@ void Parser::parse_default_case(){
 StatementNode* Parser::ParseInput()
 {
     StatementNode *inputNode = parse_program();
-    expect(END_OF_FILE);
+    //expect(END_OF_FILE);
     return inputNode;
 }
 

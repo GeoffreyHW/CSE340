@@ -31,15 +31,13 @@ class Parser {
     StatementNode* parse_if_stmt();
     StatementNode* parse_switch_stmt();
     
-    void parse_expr();
-    
     ArithmeticOperatorType parse_op(); 
     ConditionalOperatorType parse_relop();   
     StatementNode* parse_condition();
     Token parse_primary();
     
-    void parse_case_list();
-    void parse_case();
+    void parse_case_list(Token case_var);
+    void parse_case(Token case_var);
     void parse_default_case();
     
     struct StatementNode * parse_generate_intermediate_representation();

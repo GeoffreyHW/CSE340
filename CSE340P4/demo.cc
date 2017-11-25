@@ -47,9 +47,8 @@ ValueNode* Parser:: get_value_node(Token tok){
         return nodeMap[tok.lexeme];
     }
     else{
-        int num = atoi((tok.lexeme).c_str());
         ValueNode* numNode = new ValueNode();
-        numNode->value = num;
+        numNode->value = atoi((tok.lexeme).c_str());
         return numNode;
     }
 }
@@ -67,7 +66,6 @@ void Parser::append_to_end(StatementNode *body, StatementNode *node){
 }
     
 // Parsing
-
 StatementNode* Parser::parse_program()
 {
     //program -> var_section
@@ -79,7 +77,8 @@ StatementNode* Parser::parse_program()
 
 void Parser:: parse_var_section(){
     vector<Token> tokens = parse_id_list();
-    for(vector<Token>::iterator it = tokens.begin(); it != tokens.end(); it++){
+    vector<Token>::iterator it;
+    for(it = tokens.begin(); it != tokens.end(); it++){
         ValueNode* vn = new ValueNode;
         vn->name = it->lexeme;
         vn->value = 0;
@@ -115,11 +114,9 @@ vector<Token> Parser::parse_id_list()
 }
 
 StatementNode* Parser::parse_body()
-{   
-    StatementNode *stl;
-    
+{      
     expect(LBRACE);
-    stl = parse_stmt_list();
+    StatementNode *stl = parse_stmt_list();
     expect(RBRACE);
     
     return stl;
@@ -175,7 +172,10 @@ StatementNode* Parser::parse_stmt()
     // stmt -> switch_stmt
  
     Token t = peek();
-    if(t.token_type == ID && t.lexeme != "FOR"){
+    if(t.lexeme == "FOR"){
+        return parse_for_stmt();
+    }
+    if(t.token_type == ID){
         return parse_assign_stmt();
     }
     else if(t.token_type == PRINT){
@@ -186,9 +186,6 @@ StatementNode* Parser::parse_stmt()
     }
     else if(t.token_type == IF){
         return parse_if_stmt();
-    }
-    else if(t.lexeme == "FOR"){
-        return parse_for_stmt();
     }
     else if(t.token_type == SWITCH){
         return parse_switch_stmt();
@@ -201,7 +198,7 @@ StatementNode* Parser::parse_stmt()
 StatementNode* Parser::parse_assign_stmt()
 {
     // assign_stmt -> ID EQUAL expr SEMICOLON
-    StatementNode * s1 = new StatementNode;
+    StatementNode *s1 = new StatementNode;
     s1->type = ASSIGN_STMT;
     s1->assign_stmt = new AssignmentStatement;
     
@@ -231,7 +228,7 @@ StatementNode* Parser::parse_assign_stmt()
 }
 
 StatementNode* Parser::parse_print_stmt(){
-    StatementNode * s2 = new StatementNode;
+    StatementNode *s2 = new StatementNode;
     s2->type = PRINT_STMT;
     s2->print_stmt = new PrintStatement;
     
@@ -258,7 +255,7 @@ StatementNode* Parser::parse_while_stmt()
     gt->goto_stmt->target = s3;
     append_to_end(whileBody, gt);
     
-    StatementNode* noopWhile = new StatementNode;
+    StatementNode *noopWhile = new StatementNode;
     noopWhile->type = NOOP_STMT;
     
     s3->if_stmt->false_branch = noopWhile;   
@@ -280,7 +277,7 @@ StatementNode* Parser::parse_for_stmt(){
     
     forAssign->next = s5;
     
-    StatementNode* noopFor = new StatementNode;
+    StatementNode *noopFor = new StatementNode;
     noopFor->type = NOOP_STMT;   
     s5->next = noopFor;
     
@@ -427,20 +424,19 @@ StatementNode* Parser::parse_switch_stmt(){
     noopSwitch->type = NOOP_STMT;   
     
     StatementNode *switchNode = parse_case_list(switchValue, noopSwitch);
-    StatementNode *defaultNode = NULL;
     
     Token t = peek();
     if(t.token_type == DEFAULT){
-        defaultNode = parse_default_case(noopSwitch);
+        StatementNode *defaultNode = parse_default_case(noopSwitch);
+        append_to_end(switchNode, defaultNode);
     }
     else{
-        defaultNode = new StatementNode();
+        StatementNode *defaultNode = new StatementNode();
         defaultNode->type = NOOP_STMT;
         defaultNode->next = noopSwitch;
+        append_to_end(switchNode, defaultNode);
     }
-    
-    append_to_end(switchNode, defaultNode);
-    
+       
     expect(RBRACE);
     
     return switchNode;
@@ -501,7 +497,6 @@ StatementNode* Parser::parse_default_case(StatementNode *noopSwitch){
 StatementNode* Parser::ParseInput()
 {
     StatementNode *inputNode = parse_program();
-    //expect(END_OF_FILE);
     return inputNode;
 }
 

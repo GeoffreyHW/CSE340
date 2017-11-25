@@ -36,9 +36,9 @@ class Parser {
     StatementNode* parse_condition();
     Token parse_primary();
     
-    void parse_case_list(Token case_var);
-    void parse_case(Token case_var);
-    void parse_default_case();
+    StatementNode* parse_case_list(ValueNode* switchValue, StatementNode* noopSwitch);
+    StatementNode* parse_case(ValueNode* switchValue, StatementNode* noopSwitch);
+    StatementNode* parse_default_case(StatementNode *noopSwitch);
     
     struct StatementNode * parse_generate_intermediate_representation();
 
